@@ -1,3 +1,13 @@
+/* Resistance used:
+  red - red - orange: 843
+  brown - black - yellow: 512
+  
+  max error: 7%
+  
+  pulldown resistor:
+  brown - black - yellow
+*/
+
 void setup(){
   Serial.begin(115200);
   pinMode(13, OUTPUT);
