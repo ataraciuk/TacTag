@@ -9,6 +9,10 @@
   
   A0: analogRead one knee
   A1: analogRead the other
+  
+  200: green
+  201: red
+  202: blue
 */
 #define playerAmount 2
 #define error 0.07
@@ -31,6 +35,26 @@ void setup(){
 void loop(){
   playerTouched(analogRead(A0));
   playerTouched(analogRead(A1));
+  if(Serial.available() > 0) {
+    int val = Serial.read();
+    switch(val){
+      case 100:
+        //here goes feedback on point scored
+        break;
+      case 101:
+        //here goes feedback on lost a point
+        break;
+      case 200:
+        //turn the leds green
+        break;
+      case 201:
+        //turn the leds red
+        break;
+      case 202:
+        //turn the leds blue
+        break;
+    }
+  }
 }
 
 void playerTouched(int val) {
@@ -42,7 +66,7 @@ void playerTouched(int val) {
       unsigned long time = millis();
       if(lastWrite + intervalWrite < time) {
         lastWrite = time;
-        Serial.write(i*5+100);
+        Serial.write(i+100);
       }
     }
   }

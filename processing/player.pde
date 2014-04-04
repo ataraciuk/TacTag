@@ -1,9 +1,10 @@
 class Player {
-  public int code;
   public int score = 0;
   public int element = -1;
+  public color myColor;
+  public boolean joined = false;
   
-  public Player(int playerCode) {
-    code = playerCode;
+  public Player(color c) {
+    myColor = c;
   }
 }

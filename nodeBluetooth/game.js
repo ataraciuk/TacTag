@@ -1,6 +1,24 @@
 var noble = require('noble'), osc = require('node-osc');
 var myBlunos = {};
-var client = new osc.Client('127.0.0.1', 28000);
+var oscPort = 28000, oscIP = '127.0.0.1';
+var client = new osc.Client(oscIP, oscPort), oscServer = new osc.Server(oscPort, oscIP);
+
+oscServer.on("message", function (msg, rinfo) {
+	var route = msg[0];
+	switch(route) {
+		case '/setColor':
+			getBlunoFromCode(msg[1]).characteristic.write(new Buffer([msg[2]]),false);
+			break;
+		case '/endRound':
+			getBlunoFromCode(msg[1]).characteristic.write(new Buffer([100]),false);
+			getBlunoFromCode(msg[2]).characteristic.write(new Buffer([101]),false);
+			break;
+		default:
+			console.log('OSC message:');
+			console.log(msg);
+			break;
+	}
+});
 
 noble.on('stateChange', function(state) {
   if (state === 'poweredOn') {
