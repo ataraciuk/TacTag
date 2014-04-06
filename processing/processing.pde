@@ -12,11 +12,13 @@ HashMap<Integer,Player> players = new HashMap<Integer,Player>();
 OscP5 oscP5;
 NetAddress myRemoteLocation;
 int gameStatus = 0; //0 = not started, 1 = choosing elem, 2 = fighting
+int timeToChoose = 3000, timeToTouch = 5000, chooseBegin = -1, touchBegin = -1;
 
 void setup() {
   size(displayWidth, displayHeight);
-  textAlign(LEFT, CENTER);
-  //background(255,255,255);
+  textAlign(CENTER, CENTER);
+  background(192,192,192);
+  textFont(createFont("Arial", 100, true));
   
   oscP5 = new OscP5(this,28000);
  
@@ -30,23 +32,79 @@ void setup() {
 }
 
 void draw() {
+  int time = millis();
+  if(gameStatus == 0 && !playerWithoutElem()) {
+    setChoosing();
+  }
+  if(gameStatus == 1 && time > timeToChoose + chooseBegin) {
+    setTouching();
+  }
+  if(gameStatus == 2 && time > timeToTouch + touchBegin) {
+    setChoosing();
+  }
+  
   int size = players.size(), i = 0, pOffset;
   for(Player p : players.values()) {
-    fill(p.myColor);
     pOffset = i*width/size;
+    stroke(0,0,0);
+    fill(map(i,0,size,160,255));
     rect(pOffset,0,width/size,height);
+    fill(p.myColor);
+    drawTextShadows("Player "+(i+1),
+      40,
+      p.myColor,
+      color(255),
+      pOffset+20,
+      0, width/size-40, 200, 3);
     if(!p.joined) {
-      drawText("Touch your kneed pad with your glove to join!",
-        20,
-        255,
-        255,
-        255,
-        0,0,0,
-        40+pOffset,
-        400);
+      drawTextShadows("Touch your knee pad with your glove to join.",
+        25,
+        p.myColor,
+        color(255),
+        pOffset+20,
+        0, width/size-40, 400, 1);
+    }
+    else {
+      if(p.element == -1) {
+        drawTextShadows("Joined!",
+          25,
+          p.myColor,
+          color(255),
+          pOffset+20,
+          0, width/size-40, 400, 1);
+      }
+      drawTextShadows("Choose an element",
+        25,
+        p.myColor,
+        color(255),
+        pOffset+20,
+        0, width/size-40, 500, 1);
     }
     i++;
   }
+  displayTimer();
+}
+
+void setChoosing() {
+  gameStatus = 1;
+  chooseBegin = millis();
+}
+
+void setTouching() {
+  gameStatus = 2;
+  touchBegin = millis();
+}
+
+void displayTimer() {
+  if(gameStatus > 0)
+    drawTextOutline(""+ ((gameStatus == 1 ? (timeToChoose -millis() + chooseBegin) : (timeToTouch - millis() + touchBegin)) / 1000 + 1), 100, color(255,255,0), color(0), 0,0, width, height);
+}
+
+boolean playerWithoutElem() {
+  for(Player p : players.values()) {
+    if(p.element == -1) return true;
+  }
+  return false;
 }
 
 void newPlayer(int val){
@@ -70,6 +128,7 @@ void playerTouch(int who, int by) {
       int stronger = checkStronger(pWho, pBy);
       if(stronger != 0) {
         oscP5.send(new OscMessage("/endRound", stronger == 1 ? new Object[]{ who, by} : new Object[]{by, who}), myRemoteLocation);
+        setChoosing();
       }
     }
   }
@@ -117,13 +176,21 @@ boolean sketchFullScreen() {
   return true;
 }
 
-void drawText(String s, int size, int rText, int gText, int bText, int rBorder, int gBorder, int bBorder, int x, int y) {
+void drawTextOutline(String s, int size, color cText, color cBorder, int x, int y, int w, int h) {
   textSize(size);
-  fill(rBorder, gBorder, bBorder);
-  text(s, x+1, y);
-  text(s, x, y+1);
-  text(s, x-1, y);
-  text(s, x+1, y-1);
-  fill(rText, gText, bText);
-  text(s, x,y);
+  fill(cBorder);
+  text(s, x+1, y, w, h);
+  text(s, x, y+1, w, h);
+  text(s, x-1, y, w, h);
+  text(s, x, y-1, w, h);
+  fill(cText);
+  text(s, x,y, w, h);
+}
+
+void drawTextShadows(String s, int size, color cText, color cBorder, int x, int y, int w, int h, int amount) {
+  textSize(size);
+  fill(cBorder);
+  for(int i = 0; i <= amount; i++) text(s, x+i, y+i, w, h);
+  fill(cText);
+  text(s, x,y, w, h);
 }
