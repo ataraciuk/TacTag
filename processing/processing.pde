@@ -46,13 +46,25 @@ void setup() {
   oscP5.send(new OscMessage("/started"), myRemoteLocation);
 }
 
+void reset() {
+  players = new HashMap<Integer,Player>();
+  gameStatus = 0;
+  chooseBegin = -1;
+  touchBegin = -1;
+}
+
 void draw() {
   int time = millis();
   if(gameStatus == 0 && !playerWithoutElem()) {
     setChoosing(time);
   }
   if(gameStatus == 1 && time > timeToChoose + chooseBegin) {
-    setTouching(time);
+    if(isDraw()) {
+      setChoosing(time);
+    }
+    else {
+      setTouching(time);
+    }
   }
   if(gameStatus == 2 && time > timeToTouch + touchBegin) {
     setChoosing(time);
@@ -223,4 +235,13 @@ void drawTextShadows(String s, int size, color cText, color cBorder, int x, int 
   for(int i = 0; i <= amount; i++) text(s, x+i, y+i, w, h);
   fill(cText);
   text(s, x,y, w, h);
+}
+
+boolean isDraw() {
+  int element = -1;
+  for(Player p : players.values()) {
+    if(element != -1 && p.element != element) return false;
+    element = p.element;
+  }
+  return true;
 }
