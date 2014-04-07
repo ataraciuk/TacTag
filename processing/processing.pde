@@ -1,3 +1,10 @@
+import ddf.minim.spi.*;
+import ddf.minim.signals.*;
+import ddf.minim.*;
+import ddf.minim.analysis.*;
+import ddf.minim.ugens.*;
+import ddf.minim.effects.*;
+
 /*
 100 = red
 101 = black
@@ -12,7 +19,10 @@ HashMap<Integer,Player> players = new HashMap<Integer,Player>();
 OscP5 oscP5;
 NetAddress myRemoteLocation;
 int gameStatus = 0; //0 = not started, 1 = choosing elem, 2 = fighting
-int timeToChoose = 3000, timeToTouch = 5000, chooseBegin = -1, touchBegin = -1;
+int timeToChoose = 2999, timeToTouch = 4999, chooseBegin = -1, touchBegin = -1;
+int lastChooseSec;
+Minim minim;
+AudioPlayer timerPlayer, bipPlayer;
 
 void setup() {
   size(displayWidth, displayHeight);
@@ -22,25 +32,30 @@ void setup() {
   
   oscP5 = new OscP5(this,28000);
  
-  myRemoteLocation = new NetAddress("127.0.0.1",28000);
+  myRemoteLocation = new NetAddress("127.0.0.1",28001);
   
   oscP5.plug(this,"newPlayer","/newPlayer");
   oscP5.plug(this, "playerElem", "/playerElement");
   oscP5.plug(this, "playerTouch", "/playerTouch");
   players.put(100, new Player(color(255,0,0)));
   players.put(101, new Player(color(0,0,0)));
+  
+  minim = new Minim(this);
+  timerPlayer = minim.loadFile("timer.mp3");
+  bipPlayer = minim.loadFile("bip.wav");
+  oscP5.send(new OscMessage("/started"), myRemoteLocation);
 }
 
 void draw() {
   int time = millis();
   if(gameStatus == 0 && !playerWithoutElem()) {
-    setChoosing();
+    setChoosing(time);
   }
   if(gameStatus == 1 && time > timeToChoose + chooseBegin) {
-    setTouching();
+    setTouching(time);
   }
   if(gameStatus == 2 && time > timeToTouch + touchBegin) {
-    setChoosing();
+    setChoosing(time);
   }
   
   int size = players.size(), i = 0, pOffset;
@@ -82,22 +97,37 @@ void draw() {
     }
     i++;
   }
-  displayTimer();
+  displayTimer(time);
+  playSounds(time);
 }
 
-void setChoosing() {
+void setChoosing(int time) {
   gameStatus = 1;
-  chooseBegin = millis();
+  chooseBegin = time;
+  timerPlayer.pause();
+  bipPlayer.rewind();
+  bipPlayer.play();
+  lastChooseSec = 0;
 }
 
-void setTouching() {
+void setTouching(int time) {
   gameStatus = 2;
-  touchBegin = millis();
+  touchBegin = time;
+  timerPlayer.rewind();
+  timerPlayer.play();
 }
 
-void displayTimer() {
+void displayTimer(int time) {
   if(gameStatus > 0)
-    drawTextOutline(""+ ((gameStatus == 1 ? (timeToChoose -millis() + chooseBegin) : (timeToTouch - millis() + touchBegin)) / 1000 + 1), 100, color(255,255,0), color(0), 0,0, width, height);
+    drawTextOutline(""+ ((gameStatus == 1 ? (timeToChoose - time + chooseBegin) : (timeToTouch - time + touchBegin)) / 1000 + 1), 100, color(255,255,0), color(0), 0,0, width, height);
+}
+
+void playSounds(int time) {
+  if(gameStatus == 1 && (time - chooseBegin) / 1000 > lastChooseSec) {
+    bipPlayer.rewind();
+    bipPlayer.play();    
+  }
+  lastChooseSec = (time - chooseBegin) / 1000;
 }
 
 boolean playerWithoutElem() {
@@ -128,7 +158,7 @@ void playerTouch(int who, int by) {
       int stronger = checkStronger(pWho, pBy);
       if(stronger != 0) {
         oscP5.send(new OscMessage("/endRound", stronger == 1 ? new Object[]{ who, by} : new Object[]{by, who}), myRemoteLocation);
-        setChoosing();
+        setChoosing(millis());
       }
     }
   }
