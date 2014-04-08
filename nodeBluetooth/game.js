@@ -66,7 +66,7 @@ function connectPeripheral(peripheral) {
 						}
 					} else if(code >= 200 && code < 203) {
 						var myCode = myBlunos[peripheral.uuid].code;
-						client.send('/playerElement', myCode, code);
+						if(myCode) client.send('/playerElement', myCode, code);
 					}
 					/*
 					client.send('/newPlayer', 0);
