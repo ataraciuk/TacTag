@@ -18,10 +18,17 @@
 #define error 0.07
 
 int voltages[] = {843, 512};
+int led1Pins[] = {3,5,6};
+int led2Pins[] = {9,10,11};
+int buttonPins[] = {4,7,8};
+int red[] = {255,0,0};
+int green[] = {0,255,0};
+int blue[] = {0,0,255};
 float minVoltages[playerAmount], maxVoltages[playerAmount];
 boolean lastWritten = false;
 unsigned long lastWrite = millis();
 unsigned long intervalWrite = 200;
+unsigned long blinkSpeed = 2;
 
 void setup(){
   Serial.begin(115200);
@@ -29,6 +36,11 @@ void setup(){
   for(int i = 0; i < playerAmount; i++) {
     minVoltages[i] = (1.0 - error) * voltages[i];
     maxVoltages[i] = (1.0 + error) * voltages[i];
+  }
+  for(int i = 0; i < 3; i++) {
+    pinMode(led1Pins[i], OUTPUT);
+    pinMode(led2Pins[i], OUTPUT);
+    pinMode(buttonPins[i], INPUT);
   }
 }
 
@@ -38,20 +50,29 @@ void loop(){
   if(Serial.available() > 0) {
     int val = Serial.read();
     switch(val){
+      case 90:
+        //feedback on just joined or no score either
+        setLeds(127);
+        break;
       case 100:
         //here goes feedback on point scored
+        setLeds((millis() / blinkSpeed) % 255);
         break;
       case 101:
         //here goes feedback on lost a point
+        setLeds(0);
         break;
       case 200:
         //turn the leds green
+        setLeds(green);
         break;
       case 201:
         //turn the leds red
+        setLeds(red);
         break;
       case 202:
         //turn the leds blue
+        setLeds(blue);
         break;
     }
   }
@@ -69,5 +90,19 @@ void playerTouched(int val) {
         Serial.write(i+100);
       }
     }
+  }
+}
+
+void setLeds(int val) {
+  for(int i = 0; i < 3; i++) {
+    analogWrite(led1Pins[i], val);
+    analogWrite(led2Pins[i], val);
+  }
+}
+
+void setLeds(int vals[]) {
+  for(int i = 0; i < 3; i++) {
+    analogWrite(led1Pins[i], vals[i]);
+    analogWrite(led2Pins[i], vals[i]);
   }
 }

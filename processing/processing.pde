@@ -16,13 +16,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 HashMap<Integer,Player> players = new HashMap<Integer,Player>();
+HashMap<Integer,Integer> colors = new HashMap<Integer,Integer>();
 OscP5 oscP5;
 NetAddress myRemoteLocation;
 int gameStatus = 0; //0 = not started, 1 = choosing elem, 2 = fighting
-int timeToChoose = 2999, timeToTouch = 4999, chooseBegin = -1, touchBegin = -1;
+int timeToChoose = 3999, timeToTouch = 4999, chooseBegin = -1, touchBegin = -1;
 int lastChooseSec;
 Minim minim;
-AudioPlayer timerPlayer, bipPlayer;
+AudioPlayer timerPlayer, bipPlayer, punchPlayer, magicPlayer;
 
 void setup() {
   size(displayWidth, displayHeight);
@@ -37,12 +38,20 @@ void setup() {
   oscP5.plug(this,"newPlayer","/newPlayer");
   oscP5.plug(this, "playerElem", "/playerElement");
   oscP5.plug(this, "playerTouch", "/playerTouch");
-  players.put(100, new Player(color(255,0,0)));
+  
+  players.put(100, new Player(color(200,55,0)));
   players.put(101, new Player(color(0,0,0)));
+  
+  colors.put(200, color(0,255,0));
+  colors.put(201, color(255,0,0));
+  colors.put(202, color(0,0,255));
   
   minim = new Minim(this);
   timerPlayer = minim.loadFile("timer.mp3");
   bipPlayer = minim.loadFile("bip.wav");
+  punchPlayer = minim.loadFile("punch.mp3");
+  magicPlayer = minim.loadFile("magic.wav");
+  
   oscP5.send(new OscMessage("/started"), myRemoteLocation);
 }
 
@@ -67,10 +76,12 @@ void draw() {
     }
   }
   if(gameStatus == 2 && time > timeToTouch + touchBegin) {
+    oscP5.send(new OscMessage("/endTime"), myRemoteLocation);
     setChoosing(time);
   }
   
   int size = players.size(), i = 0, pOffset;
+  int rectS = width/size/4;
   for(Player p : players.values()) {
     pOffset = i*width/size;
     stroke(0,0,0);
@@ -100,12 +111,24 @@ void draw() {
           pOffset+20,
           0, width/size-40, 400, 1);
       }
-      drawTextShadows("Choose an element",
-        25,
+      if(gameStatus == 2) {
+        stroke(0);
+        fill(colors.get(p.element));
+        rect(pOffset+(width/size - rectS) / 2,450,rectS,rectS);
+      } else {
+        drawTextShadows("Choose an element",
+          25,
+          p.myColor,
+          color(255),
+          pOffset+20,
+          0, width/size-40, 500, 1);
+      }
+      drawTextShadows("Score: "+p.score,
+        40,
         p.myColor,
         color(255),
         pOffset+20,
-        0, width/size-40, 500, 1);
+        0, width/size-40, 650, 1);
     }
     i++;
   }
@@ -118,7 +141,7 @@ void setChoosing(int time) {
   chooseBegin = time;
   timerPlayer.pause();
   bipPlayer.rewind();
-  bipPlayer.play();
+  //bipPlayer.play();
   lastChooseSec = 0;
 }
 
@@ -127,6 +150,7 @@ void setTouching(int time) {
   touchBegin = time;
   timerPlayer.rewind();
   timerPlayer.play();
+  sendSetColors();
 }
 
 void displayTimer(int time) {
@@ -151,8 +175,12 @@ boolean playerWithoutElem() {
 
 void newPlayer(int val){
   Player p = players.get(val);
-  if(p != null) p.joined = true;
-  println("new player!");
+  if(p != null) {
+    p.joined = true;
+    println("new player!");
+    magicPlayer.rewind();
+    magicPlayer.play();
+  }
 }
 
 void playerElem(int playerCode, int elem) {
@@ -169,6 +197,8 @@ void playerTouch(int who, int by) {
     if(pWho != null && pBy != null) {
       int stronger = checkStronger(pWho, pBy);
       if(stronger != 0) {
+        punchPlayer.rewind();
+        punchPlayer.play();
         oscP5.send(new OscMessage("/endRound", stronger == 1 ? new Object[]{ who, by} : new Object[]{by, who}), myRemoteLocation);
         setChoosing(millis());
       }

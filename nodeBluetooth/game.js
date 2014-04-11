@@ -2,6 +2,7 @@ var noble = require('noble'), osc = require('node-osc');
 var myBlunos = {};
 var oscPort = 28000, oscIP = '127.0.0.1';
 var client = new osc.Client(oscIP, oscPort), oscServer = new osc.Server(28001, oscIP);
+var neutralChoosing = 90;
 
 oscServer.on("message", function (msg, rinfo) {
 	var route = msg[0];
@@ -12,6 +13,11 @@ oscServer.on("message", function (msg, rinfo) {
 		case '/endRound':
 			getBlunoFromCode(msg[1]).characteristic.write(new Buffer([100]),false);
 			getBlunoFromCode(msg[2]).characteristic.write(new Buffer([101]),false);
+			break;
+		case '/endTime':
+			for(var key in myBlunos) {
+				myBlunos[key].characteristic.write(new Buffer([neutralChoosing]),false);
+			}
 			break;
 		default:
 			break;
@@ -57,6 +63,7 @@ function connectPeripheral(peripheral) {
 						if(!myCode) {
 							//we didn't have a code, this means this will be ours
 							myBlunos[peripheral.uuid].code = code;
+							myBlunos[peripheral.uuid].characteristic.write(new Buffer([neutralChoosing]),false);
 							client.send('/newPlayer', code);
 							console.log('player joined: '+code);
 						} else if(code != myCode) {
