@@ -14,6 +14,7 @@ import oscP5.*;
 import netP5.*;
 import java.util.Map;
 import java.util.Map.Entry;
+//import java.io.*;
 
 HashMap<Integer,Player> players = new HashMap<Integer,Player>();
 HashMap<Integer,Integer> colors = new HashMap<Integer,Integer>();
@@ -23,7 +24,7 @@ int gameStatus = 0; //0 = not started, 1 = choosing elem, 2 = fighting
 int timeToChoose = 3999, timeToTouch = 4999, chooseBegin = -1, touchBegin = -1;
 int lastChooseSec;
 Minim minim;
-AudioPlayer timerPlayer, bipPlayer, punchPlayer, magicPlayer;
+AudioPlayer timerPlayer, bipPlayer, punchPlayer, magicPlayer, saxPlayer;
 
 void setup() {
   size(displayWidth, displayHeight);
@@ -39,8 +40,7 @@ void setup() {
   oscP5.plug(this, "playerElem", "/playerElement");
   oscP5.plug(this, "playerTouch", "/playerTouch");
   
-  players.put(100, new Player(color(200,55,0)));
-  players.put(101, new Player(color(0,0,0)));
+  initPlayers();
   
   colors.put(200, color(0,255,0));
   colors.put(201, color(255,0,0));
@@ -49,17 +49,30 @@ void setup() {
   minim = new Minim(this);
   timerPlayer = minim.loadFile("timer.mp3");
   bipPlayer = minim.loadFile("bip.wav");
-  punchPlayer = minim.loadFile("punch.mp3");
+  punchPlayer = minim.loadFile("punch.wav");
   magicPlayer = minim.loadFile("magic.wav");
+  saxPlayer = minim.loadFile("sax.mp3");
+  
+  /*try {
+    Runtime.getRuntime().exec("bash startNode.js");
+  } catch(IOException e) {
+    System.out.println("exception happened - here's what I know: ");
+    e.printStackTrace();
+  }*/
   
   oscP5.send(new OscMessage("/started"), myRemoteLocation);
 }
 
+void initPlayers() {
+  players.put(100, new Player(color(200,55,0)));
+  players.put(101, new Player(color(0,0,0)));
+}
+
 void reset() {
-  players = new HashMap<Integer,Player>();
   gameStatus = 0;
   chooseBegin = -1;
   touchBegin = -1;
+  initPlayers();
 }
 
 void draw() {
@@ -77,6 +90,8 @@ void draw() {
   }
   if(gameStatus == 2 && time > timeToTouch + touchBegin) {
     oscP5.send(new OscMessage("/endTime"), myRemoteLocation);
+    saxPlayer.rewind();
+    saxPlayer.play();
     setChoosing(time);
   }
   
@@ -113,6 +128,7 @@ void draw() {
       }
       if(gameStatus == 2) {
         stroke(0);
+        println("current color: "+p.element);
         fill(colors.get(p.element));
         rect(pOffset+(width/size - rectS) / 2,450,rectS,rectS);
       } else {
@@ -186,7 +202,10 @@ void newPlayer(int val){
 void playerElem(int playerCode, int elem) {
   if(gameStatus == 1 || gameStatus == 0) {
     Player p = players.get(playerCode);
-    if(p != null) p.element = elem;
+    if(p != null) {
+      p.element = elem;
+      println("setting player "+playerCode+" with elem "+elem);
+    }
   }
 }
 
@@ -199,8 +218,13 @@ void playerTouch(int who, int by) {
       if(stronger != 0) {
         punchPlayer.rewind();
         punchPlayer.play();
-        oscP5.send(new OscMessage("/endRound", stronger == 1 ? new Object[]{ who, by} : new Object[]{by, who}), myRemoteLocation);
+        oscP5.send(new OscMessage("/endRound", stronger == 1 ? new Integer[]{ who, by} : new Integer[]{by, who}), myRemoteLocation);
         setChoosing(millis());
+        if(stronger == 1) {
+          pWho.score++;
+        } else {
+          pBy.score++;
+        }
       }
     }
   }
@@ -233,7 +257,7 @@ Player getByCode(int code) {
 
 void sendSetColors() {
   for(Entry<Integer,Player> e : players.entrySet()) {
-    OscMessage m = new OscMessage("/setColor", new Object[]{e.getKey(), e.getValue().element});
+    OscMessage m = new OscMessage("/setColor", new Integer[]{e.getKey(), e.getValue().element});
     oscP5.send(m, myRemoteLocation);
   }
 }
@@ -243,10 +267,10 @@ int checkStronger(Player p1, Player p2) {
   else if(p1.element > p2.element) return p1.element == p2.element + 1 ? 1 : -1;
   else return p1.element + 1 == p2.element ? -1 : 1;
 }
-
+/*
 boolean sketchFullScreen() {
   return true;
-}
+}*/
 
 void drawTextOutline(String s, int size, color cText, color cBorder, int x, int y, int w, int h) {
   textSize(size);
@@ -274,4 +298,26 @@ boolean isDraw() {
     element = p.element;
   }
   return true;
+}
+
+void keyReleased() {
+  switch(key){
+    case 'r':
+    case 'R':
+      reset();
+      oscP5.send(new OscMessage("/reset"), myRemoteLocation);  
+      break;
+    case 'q':
+    case 'Q':
+      oscP5.send(new OscMessage("/quit"), myRemoteLocation);
+      exit();
+      break;
+  }
+}
+
+int winnerCode() {
+  for(Entry<Integer,Player> e : players.entrySet()) {
+    if(e.getValue().score >= 5) return e.getKey();
+  }
+  return -1;
 }

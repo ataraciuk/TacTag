@@ -20,7 +20,8 @@
 int voltages[] = {843, 512};
 int led1Pins[] = {3,5,6};
 int led2Pins[] = {9,10,11};
-int buttonPins[] = {4,7,8};
+int buttonPins[] = {4,7,8}; //green, red, blue
+int buttonPressed[] = {LOW, LOW, LOW};
 int red[] = {255,0,0};
 int green[] = {0,255,0};
 int blue[] = {0,0,255};
@@ -75,6 +76,13 @@ void loop(){
         setLeds(blue);
         break;
     }
+  }
+  for(int i = 0; i < 3; i++) {
+    int val = digitalRead(buttonPins[i]);
+    if(val && !buttonPressed[i]) {
+      Serial.write(200+i);
+    }
+    buttonPressed[i] = val;
   }
 }
 

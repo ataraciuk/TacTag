@@ -5,6 +5,8 @@ var client = new osc.Client(oscIP, oscPort), oscServer = new osc.Server(28001, o
 var neutralChoosing = 90;
 
 oscServer.on("message", function (msg, rinfo) {
+	console.log('OSC message:');
+	console.log(msg);
 	var route = msg[0];
 	switch(route) {
 		case '/setColor':
@@ -19,11 +21,21 @@ oscServer.on("message", function (msg, rinfo) {
 				myBlunos[key].characteristic.write(new Buffer([neutralChoosing]),false);
 			}
 			break;
+		case '/reset':
+			for(var key in myBlunos) {
+				myBlunos[key].code = null;
+				myBlunos[key].characteristic.write(new Buffer([101]),false);
+			}
+			break;
+		case '/quit':
+			for(var key in myBlunos) {
+				myBlunos[key].peripheral.disconnect();
+			}
+			process.exit();
+			break;
 		default:
 			break;
 	}
-	console.log('OSC message:');
-	console.log(msg);
 });
 
 noble.on('stateChange', function(state) {
@@ -52,7 +64,7 @@ function connectPeripheral(peripheral) {
 			if(characteristics.length > 0) {
 				var characteristic = characteristics[0];
 				characteristic.notify(true);
-				myBlunos[peripheral.uuid][characteristic] = characteristic;
+				myBlunos[peripheral.uuid].characteristic = characteristic;
 				console.log('characteristic');
 				//var buffer = new Buffer([5]);
 				//characteristic.write(buffer, false);
