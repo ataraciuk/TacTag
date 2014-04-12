@@ -14,7 +14,7 @@ import oscP5.*;
 import netP5.*;
 import java.util.Map;
 import java.util.Map.Entry;
-//import java.io.*;
+import java.io.*;
 
 HashMap<Integer,Player> players = new HashMap<Integer,Player>();
 HashMap<Integer,Integer> colors = new HashMap<Integer,Integer>();
@@ -53,12 +53,15 @@ void setup() {
   magicPlayer = minim.loadFile("magic.wav");
   saxPlayer = minim.loadFile("sax.mp3");
   
-  /*try {
-    Runtime.getRuntime().exec("bash startNode.js");
+  try {
+    //Runtime.getRuntime().exec("/Users/ataraciuk/Documents/TacTag/processing/startNode.sh");
+    //Process p = new ProcessBuilder("/usr/local/bin/node", "/Users/ataraciuk/Documents/TacTag/nodeBluetooth/game.js").start();   
+    //Runtime.getRuntime().exec("open /usr/local/bin/node --args /Users/ataraciuk/Documents/TacTag/nodeBluetooth/games.js");
+    Runtime.getRuntime().exec("/opt/X11/bin/xterm -e /usr/local/bin/node /Users/ataraciuk/Documents/TacTag/nodeBluetooth/game.js");
   } catch(IOException e) {
     System.out.println("exception happened - here's what I know: ");
     e.printStackTrace();
-  }*/
+  }
   
   oscP5.send(new OscMessage("/started"), myRemoteLocation);
 }

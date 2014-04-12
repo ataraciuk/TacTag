@@ -116,3 +116,5 @@ function getBlunoFromCode(code) {
 	}
 	return null;
 }
+
+console.log('run');
