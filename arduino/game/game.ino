@@ -29,7 +29,7 @@ float minVoltages[playerAmount], maxVoltages[playerAmount];
 boolean lastWritten = false;
 unsigned long lastWrite = millis();
 unsigned long intervalWrite = 200;
-unsigned long blinkSpeed = 2;
+unsigned long blinkSpeed = 250;
 
 void setup(){
   Serial.begin(115200);
@@ -53,11 +53,11 @@ void loop(){
     switch(val){
       case 90:
         //feedback on just joined or no score either
-        setLeds(127);
+        setLeds(64);
         break;
       case 100:
         //here goes feedback on point scored
-        setLeds((millis() / blinkSpeed) % 255);
+        setLeds((millis() / blinkSpeed) % 2 == 0 ? 127 : 0);
         break;
       case 101:
         //here goes feedback on lost a point

@@ -23,13 +23,18 @@ oscServer.on("message", function (msg, rinfo) {
 			break;
 		case '/reset':
 			for(var key in myBlunos) {
-				myBlunos[key].code = null;
-				myBlunos[key].characteristic.write(new Buffer([101]),false);
+				if (myBlunos[key].characteristic){
+					myBlunos[key].code = null;
+					myBlunos[key].characteristic.write(new Buffer([101]),false);
+				}
 			}
 			break;
 		case '/quit':
 			for(var key in myBlunos) {
-				myBlunos[key].peripheral.disconnect();
+				if (myBlunos[key].characteristic){
+					myBlunos[key].characteristic.write(new Buffer([101]),false);
+					myBlunos[key].peripheral.disconnect();
+				}
 			}
 			process.exit();
 			break;
