@@ -20,7 +20,7 @@ HashMap<Integer,Player> players = new HashMap<Integer,Player>();
 HashMap<Integer,Integer> colors = new HashMap<Integer,Integer>();
 OscP5 oscP5;
 NetAddress myRemoteLocation;
-int gameStatus = 0; //0 = not started, 1 = choosing elem, 2 = fighting
+int gameStatus = 0; //0 = not started, 1 = choosing elem, 2 = fighting, 3 = over
 int timeToChoose = 3999, timeToTouch = 4999, chooseBegin = -1, touchBegin = -1;
 int lastChooseSec;
 Minim minim;
@@ -79,80 +79,94 @@ void reset() {
 }
 
 void draw() {
-  int time = millis();
-  if(gameStatus == 0 && !playerWithoutElem()) {
-    setChoosing(time);
-  }
-  if(gameStatus == 1 && time > timeToChoose + chooseBegin) {
-    if(isDraw()) {
+  background(192,192,192);
+  int winner = winnerCode();
+  if (winner == -1) {
+    int time = millis();
+    if(gameStatus == 0 && !playerWithoutElem()) {
       setChoosing(time);
     }
-    else {
-      setTouching(time);
+    if(gameStatus == 1 && time > timeToChoose + chooseBegin) {
+      if(isDraw()) {
+        setChoosing(time);
+      }
+      else {
+        setTouching(time);
+      }
     }
-  }
-  if(gameStatus == 2 && time > timeToTouch + touchBegin) {
-    oscP5.send(new OscMessage("/endTime"), myRemoteLocation);
-    saxPlayer.rewind();
-    saxPlayer.play();
-    setChoosing(time);
-  }
-  
-  int size = players.size(), i = 0, pOffset;
-  int rectS = width/size/4;
-  for(Player p : players.values()) {
-    pOffset = i*width/size;
-    stroke(0,0,0);
-    fill(map(i,0,size,160,255));
-    rect(pOffset,0,width/size,height);
-    fill(p.myColor);
-    drawTextShadows("Player "+(i+1),
-      40,
-      p.myColor,
-      color(255),
-      pOffset+20,
-      0, width/size-40, 200, 3);
-    if(!p.joined) {
-      drawTextShadows("Touch your knee pad with your glove to join.",
-        25,
+    if(gameStatus == 2 && time > timeToTouch + touchBegin) {
+      oscP5.send(new OscMessage("/endTime"), myRemoteLocation);
+      saxPlayer.rewind();
+      saxPlayer.play();
+      setChoosing(time);
+    }
+    
+    int size = players.size(), i = 0, pOffset;
+    int rectS = width/size/4;
+    for(Entry<Integer,Player> e : players.entrySet()) {
+      Player p = e.getValue();
+      int pCode = e.getKey();
+      pOffset = i*width/size;
+      stroke(0,0,0);
+      fill(map(i,0,size,160,255));
+      rect(pOffset,0,width/size,height);
+      fill(p.myColor);
+      drawTextShadows("Player "+(pCode - 99),
+        40,
         p.myColor,
         color(255),
         pOffset+20,
-        0, width/size-40, 400, 1);
-    }
-    else {
-      if(p.element == -1) {
-        drawTextShadows("Joined!",
+        0, width/size-40, 200, 3);
+      if(!p.joined) {
+        drawTextShadows("Touch your knee pad with your glove to join.",
           25,
           p.myColor,
           color(255),
           pOffset+20,
           0, width/size-40, 400, 1);
       }
-      if(gameStatus == 2) {
-        stroke(0);
-        println("current color: "+p.element);
-        fill(colors.get(p.element));
-        rect(pOffset+(width/size - rectS) / 2,450,rectS,rectS);
-      } else {
-        drawTextShadows("Choose an element",
-          25,
+      else {
+        if(p.element == -1) {
+          drawTextShadows("Joined!",
+            25,
+            p.myColor,
+            color(255),
+            pOffset+20,
+            0, width/size-40, 400, 1);
+        }
+        if(gameStatus == 2) {
+          stroke(0);
+          println("current color: "+p.element);
+          fill(colors.get(p.element));
+          rect(pOffset+(width/size - rectS) / 2,450,rectS,rectS);
+        } else {
+          drawTextShadows("Choose an element",
+            25,
+            p.myColor,
+            color(255),
+            pOffset+20,
+            0, width/size-40, 500, 1);
+        }
+        drawTextShadows("Score: "+p.score,
+          40,
           p.myColor,
           color(255),
           pOffset+20,
-          0, width/size-40, 500, 1);
+          0, width/size-40, 650, 1);
       }
-      drawTextShadows("Score: "+p.score,
-        40,
-        p.myColor,
-        color(255),
-        pOffset+20,
-        0, width/size-40, 650, 1);
+      i++;
     }
-    i++;
+    displayTimer(time);
+    playSounds(time);
+  } else {
+    Player pWin = players.get(winner);
+    drawTextShadows("Player "+(winner-99)+ " wins!",
+      50,
+      pWin.myColor,
+      color(255),
+      20,
+      0, width-40, height, 4);
   }
-  displayTimer(time);
-  playSounds(time);
 }
 
 void setChoosing(int time) {

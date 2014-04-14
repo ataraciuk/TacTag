@@ -27,6 +27,7 @@ int green[] = {0,255,0};
 int blue[] = {0,0,255};
 float minVoltages[playerAmount], maxVoltages[playerAmount];
 boolean lastWritten = false;
+boolean blinking = false;
 unsigned long lastWrite = millis();
 unsigned long intervalWrite = 200;
 unsigned long blinkSpeed = 250;
@@ -57,7 +58,6 @@ void loop(){
         break;
       case 100:
         //here goes feedback on point scored
-        setLeds((millis() / blinkSpeed) % 2 == 0 ? 127 : 0);
         break;
       case 101:
         //here goes feedback on lost a point
@@ -76,6 +76,7 @@ void loop(){
         setLeds(blue);
         break;
     }
+    blinking = val == 100;
   }
   for(int i = 0; i < 3; i++) {
     int val = digitalRead(buttonPins[i]);
@@ -83,6 +84,9 @@ void loop(){
       Serial.write(200+i);
     }
     buttonPressed[i] = val;
+  }
+  if (blinking) {
+    setLeds((millis() / blinkSpeed) % 2 == 0 ? 127 : 0);
   }
 }
 
