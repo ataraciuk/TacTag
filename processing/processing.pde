@@ -329,6 +329,10 @@ void keyReleased() {
       oscP5.send(new OscMessage("/quit"), myRemoteLocation);
       exit();
       break;
+    case 'c':
+    case 'C':
+      oscP5.send(new OscMessage("/connect"), myRemoteLocation);
+      break;
   }
 }
 

@@ -3,6 +3,7 @@ var myBlunos = {};
 var oscPort = 28000, oscIP = '127.0.0.1';
 var client = new osc.Client(oscIP, oscPort), oscServer = new osc.Server(28001, oscIP);
 var neutralChoosing = 90;
+var playing = true;
 
 oscServer.on("message", function (msg, rinfo) {
 	console.log('OSC message:');
@@ -30,13 +31,22 @@ oscServer.on("message", function (msg, rinfo) {
 			}
 			break;
 		case '/quit':
+			playing = false;
 			for(var key in myBlunos) {
 				if (myBlunos[key].characteristic){
 					myBlunos[key].characteristic.write(new Buffer([101]),false);
-					myBlunos[key].peripheral.disconnect();
+					setTimeout(function(p){return function(){
+						p.disconnect();}
+					}(myBlunos[key].peripheral),1000);
 				}
 			}
-			process.exit();
+			setTimeout(process.exit, 2000);
+			break;
+		case '/connect':
+			console.log(myBlunos.length);
+			for(var key in myBlunos) {
+				myBlunos[key].peripheral.disconnect();
+			}
 			break;
 		default:
 			break;
@@ -55,7 +65,17 @@ noble.on('discover', function(peripheral) {
   if(peripheral.advertisement.localName == 'DFBLUnoV1.6') {
   	myBlunos[peripheral.uuid] = myBlunos[peripheral.uuid] || {peripheral : peripheral, connected: false};
   	console.log('bluno found');
+	peripheral.on('disconnect', function(error){
+		myBlunos[peripheral.uuid].connected = false;
+		console.log('disconnected peripheral: '+peripheral.uuid);
+		if(playing) connectPeripheral(peripheral);
+	});
   	connectPeripheral(peripheral);
+	setTimeout(function(){
+		if(!myBlunos[peripheral.uuid].connected) {
+			peripheral.disconnect();
+		}
+	},2000);
   }
 });
 
@@ -63,8 +83,8 @@ function connectPeripheral(peripheral) {
 	console.log('trying to connect to: '+peripheral.uuid);
 	peripheral.connect(function(error) {
 		console.log(error);
-		console.log('connected peripheral: '+peripheral.uuid);
 		myBlunos[peripheral.uuid].connected = true;
+		console.log('connected peripheral: '+peripheral.uuid);
 		peripheral.discoverSomeServicesAndCharacteristics([], ['dfb1'], function(error, services, characteristics){
 			if(characteristics.length > 0) {
 				var characteristic = characteristics[0];
@@ -99,19 +119,7 @@ function connectPeripheral(peripheral) {
 				});
 			}
 		});
-		peripheral.on('disconnect', function(error){
-			myBlunos[peripheral.uuid].connected = false;
-			console.log('disconnected peripheral: '+peripheral.uuid);
-			connectPeripheral(peripheral);
-		});
 	});
-	setTimeout(function(){
-		if(!myBlunos[peripheral.uuid].connected) {
-			peripheral.disconnect(function(e){
-				connectPeripheral(peripheral);
-			});
-		}
-	},2000);
 }
 
 function getBlunoFromCode(code) {

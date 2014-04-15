@@ -18,8 +18,8 @@
 #define error 0.07
 
 int voltages[] = {843, 512};
-int led1Pins[] = {3,5,6};
-int led2Pins[] = {9,10,11};
+int led1Pins[] = {3,5,6}; //red, green, blue
+int led2Pins[] = {9,10,11}; //red, green, blue
 int buttonPins[] = {4,7,8}; //green, red, blue
 int buttonPressed[] = {LOW, LOW, LOW};
 int red[] = {255,0,0};
@@ -34,6 +34,7 @@ unsigned long blinkSpeed = 250;
 
 void setup(){
   Serial.begin(115200);
+  Serial.flush();
   pinMode(13, OUTPUT);
   for(int i = 0; i < playerAmount; i++) {
     minVoltages[i] = (1.0 - error) * voltages[i];
