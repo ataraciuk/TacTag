@@ -45,6 +45,7 @@ void setup(){
     pinMode(led2Pins[i], OUTPUT);
     pinMode(buttonPins[i], INPUT);
   }
+  setLeds(red);
 }
 
 void loop(){

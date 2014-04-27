@@ -26,7 +26,7 @@ oscServer.on("message", function (msg, rinfo) {
 			for(var key in myBlunos) {
 				if (myBlunos[key].characteristic){
 					myBlunos[key].code = null;
-					myBlunos[key].characteristic.write(new Buffer([101]),false);
+					myBlunos[key].characteristic.write(new Buffer([200]),false);
 				}
 			}
 			break;
@@ -34,7 +34,7 @@ oscServer.on("message", function (msg, rinfo) {
 			playing = false;
 			for(var key in myBlunos) {
 				if (myBlunos[key].characteristic){
-					myBlunos[key].characteristic.write(new Buffer([101]),false);
+					myBlunos[key].characteristic.write(new Buffer([201]),false);
 					setTimeout(function(p){return function(){
 						p.disconnect();}
 					}(myBlunos[key].peripheral),1000);
@@ -91,6 +91,7 @@ function connectPeripheral(peripheral) {
 				characteristic.notify(true);
 				myBlunos[peripheral.uuid].characteristic = characteristic;
 				console.log('characteristic');
+				characteristic.write(new Buffer([200]),false);
 				//var buffer = new Buffer([5]);
 				//characteristic.write(buffer, false);
 				characteristic.on('read', function(data, isNotification) {
@@ -112,6 +113,7 @@ function connectPeripheral(peripheral) {
 						var myCode = myBlunos[peripheral.uuid].code;
 						if(myCode) client.send('/playerElement', myCode, code);
 					}
+					console.log('received message: '+code);
 					/*
 					client.send('/newPlayer', 0);
 					console.log('received data: '+ data.readUInt8(0));
