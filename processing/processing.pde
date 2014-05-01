@@ -17,7 +17,7 @@ import java.util.Map.Entry;
 import java.io.*;
 
 HashMap<Integer,Player> players = new HashMap<Integer,Player>();
-HashMap<Integer,Integer> colors = new HashMap<Integer,Integer>();
+HashMap<Integer,Element> elems = new HashMap<Integer,Element>();
 OscP5 oscP5;
 NetAddress myRemoteLocation;
 int gameStatus = 0; //0 = not started, 1 = choosing elem, 2 = fighting, 3 = over
@@ -42,9 +42,10 @@ void setup() {
   
   initPlayers();
   
-  colors.put(200, color(0,255,0));
-  colors.put(201, color(255,0,0));
-  colors.put(202, color(0,0,255));
+  PImage[] img = {loadImage("plant.png"),loadImage("fire.png"),loadImage("water.png")};
+  elems.put(200, new Element(color(0,255,0), img[0]));
+  elems.put(201, new Element(color(255,0,0), img[1]));
+  elems.put(202, new Element(color(0,0,255), img[2]));
   
   minim = new Minim(this);
   timerPlayer = minim.loadFile("timer.mp3");
@@ -102,7 +103,7 @@ void draw() {
     }
     
     int size = players.size(), i = 0, pOffset;
-    int rectS = width/size/4;
+    int rectS = width/size/3;
     for(Entry<Integer,Player> e : players.entrySet()) {
       Player p = e.getValue();
       int pCode = e.getKey();
@@ -137,8 +138,7 @@ void draw() {
         if(gameStatus == 2) {
           stroke(0);
           println("current color: "+p.element);
-          fill(colors.get(p.element));
-          rect(pOffset+(width/size - rectS) / 2,450,rectS,rectS);
+          image(elems.get(p.element).img, pOffset+(width/size - rectS) / 2,450,rectS,rectS);
         } else {
           drawTextShadows("Choose an element",
             25,

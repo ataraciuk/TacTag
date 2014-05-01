@@ -9,4 +9,10 @@ class Player {
     myColor = c;
     myBg = color(red(c),green(c),blue(c),25);
   }
+  
+  public Player(color c, int elem) {
+    myColor = c;
+    myBg = color(red(c),green(c),blue(c),25);
+    element = elem;
+  }
 }
